@@ -29,6 +29,16 @@ def load_options():
 OPTIONS = load_options()
 ENTITIES = [OPTIONS[k] for k in ENTITY_KEYS if OPTIONS.get(k)]
 
+# Zusatzdaten: Wetter + PV-Prognose (mit Standardwerten, falls nicht konfiguriert)
+EXTRA_DEFAULTS = {
+    "weather_entity": "weather.forecast_home",
+    "pv_today_entity": "sensor.deye_sunsynk_sol_ark_3_phase_x_2_pv_energy",
+    "fc_remaining_entity": "sensor.energy_production_today_remaining",
+    "fc_tomorrow_entity": "sensor.energy_production_tomorrow",
+}
+EXTRA = {k: (OPTIONS.get(k) or v) for k, v in EXTRA_DEFAULTS.items()}
+EXTRA_SECONDS = 300
+
 # Nur das, was die Karte braucht – Entity-IDs werden durch neutrale Namen ersetzt.
 CARD_CONFIG = {
     "title": "",
@@ -103,6 +113,66 @@ def visits():
         return {"total": _stats.get("total", 0), "today": today}
 
 
+def _ha(path, body=None):
+    data = json.dumps(body).encode() if body is not None else None
+    req = urllib.request.Request(
+        f"{HA_URL}{path}", data=data, method="POST" if data else "GET",
+        headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(req, timeout=8) as r:
+        return json.load(r)
+
+
+def _num(v):
+    try:
+        return round(float(v), 1)
+    except (TypeError, ValueError):
+        return None
+
+
+_extra = {"t": 0.0, "data": {}}
+
+
+def get_extra():
+    """Wetter und PV-Prognose – seltener abfragen (alle 5 Minuten)."""
+    now = time.time()
+    if now - _extra["t"] < EXTRA_SECONDS:
+        return _extra["data"]
+    out = {}
+    try:
+        w = _ha(f"/states/{EXTRA['weather_entity']}")
+        a = w.get("attributes", {})
+        weather = {
+            "cond": w.get("state"),
+            "temp": _num(a.get("temperature")),
+            "wind": _num(a.get("wind_speed")),
+            "humidity": _num(a.get("humidity")),
+            "clouds": _num(a.get("cloud_coverage")),
+            "daily": [],
+        }
+        try:
+            r = _ha("/services/weather/get_forecasts?return_response",
+                    {"entity_id": EXTRA["weather_entity"], "type": "daily"})
+            fc = (r.get("service_response") or {}).get(EXTRA["weather_entity"], {}).get("forecast", [])
+            weather["daily"] = [{
+                "date": d.get("datetime"), "cond": d.get("condition"),
+                "tmax": _num(d.get("temperature")), "tmin": _num(d.get("templow")),
+                "rain": _num(d.get("precipitation")),
+            } for d in fc[:6]]
+        except Exception as e:  # noqa: BLE001
+            print(f"Wettervorschau nicht lesbar: {e}", flush=True)
+        out["weather"] = weather
+    except Exception as e:  # noqa: BLE001
+        print(f"Wetter nicht lesbar: {e}", flush=True)
+    out["pv"] = {
+        "today": _num(fetch_state(EXTRA["pv_today_entity"])),
+        "remaining": _num(fetch_state(EXTRA["fc_remaining_entity"])),
+        "tomorrow": _num(fetch_state(EXTRA["fc_tomorrow_entity"])),
+    }
+    _extra["data"], _extra["t"] = out, now
+    return out
+
+
 def fetch_state(entity_id):
     req = urllib.request.Request(
         f"{HA_URL}/states/{entity_id}",
@@ -125,7 +195,7 @@ def get_data():
                 eid = OPTIONS.get(k)
                 if eid:
                     states[k] = {"state": fetch_state(eid)}
-            _cache["data"] = {"config": CARD_CONFIG, "states": states, "time": int(now)}
+            _cache["data"] = {"config": CARD_CONFIG, "states": states, "time": int(now), **get_extra()}
             _cache["t"] = now
         return json.dumps({**_cache["data"], "visits": visits()}).encode()
 

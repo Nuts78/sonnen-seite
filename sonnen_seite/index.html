@@ -15,6 +15,25 @@
   sonnen-laune-card { display: block; border-radius: 22px; overflow: hidden; box-shadow: 0 4px 18px rgba(0,0,0,.08); }
   #upd { text-align: center; color: #667; font-size: .95em; margin-top: 10px; }
   #upd.old { color: #a33; }
+  .box { background: #fff; border-radius: 22px; box-shadow: 0 4px 18px rgba(0,0,0,.08); padding: 16px; margin-top: 14px; }
+  .box h3 { margin: 0 0 10px; font-size: 1.05em; color: #556; font-weight: 600; }
+  .now { display: flex; align-items: center; gap: 14px; }
+  .now .ico { font-size: 3.2em; line-height: 1; }
+  .now .t { font-size: 2.4em; font-weight: 700; color: #2b2b2b; }
+  .now .c { color: #556; }
+  .now .meta { color: #889; font-size: .9em; margin-top: 2px; }
+  .days { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 14px; text-align: center; }
+  .day { background: #f3f7fb; border-radius: 12px; padding: 8px 2px; }
+  .day .d { font-size: .85em; color: #667; }
+  .day .i { font-size: 1.6em; margin: 2px 0; }
+  .day .hi { font-weight: 700; } .day .lo { color: #889; font-size: .9em; }
+  .day .r { color: #2b6cb0; font-size: .75em; min-height: 1em; }
+  .pv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
+  .pv div { background: #fff8e1; border-radius: 14px; padding: 10px 4px; }
+  .pv span { display: block; font-size: .8em; color: #776; }
+  .pv b { font-size: 1.2em; color: #b86e00; white-space: nowrap; }
+  .pvmsg { text-align: center; margin-top: 10px; font-weight: 600; color: #b86e00; }
+  @media (max-width: 380px) { .days { grid-template-columns: repeat(3, 1fr); } }
   .cam { display: block; margin: 14px auto 0; max-width: 560px; text-decoration: none; text-align: center;
          background: linear-gradient(90deg,#2b6cb0,#38a1db); color: #fff; font-weight: 600; font-size: 1.1em;
          padding: 12px 16px; border-radius: 16px; box-shadow: 0 4px 14px rgba(43,108,176,.25); }
@@ -25,6 +44,21 @@
 <body>
 <main>
   <sonnen-laune-card id="card"></sonnen-laune-card>
+  <div class="box" id="pvbox" hidden>
+    <h3>☀️ Sonnen-Prognose</h3>
+    <div class="pv">
+      <div><span>Heute erzeugt</span><b id="pvToday">–</b></div>
+      <div><span>Kommt heute noch</span><b id="pvRest">–</b></div>
+      <div><span>Morgen erwartet</span><b id="pvTom">–</b></div>
+    </div>
+    <div class="pvmsg" id="pvMsg"></div>
+  </div>
+  <div class="box" id="wxbox" hidden>
+    <h3>🌤️ Wetter in Punzau</h3>
+    <div class="now"><div class="ico" id="wxIco"></div>
+      <div><div class="t" id="wxT"></div><div class="c" id="wxC"></div><div class="meta" id="wxM"></div></div></div>
+    <div class="days" id="wxDays"></div>
+  </div>
   <a class="cam" href="https://mondseeblick.panomax.com/" target="_blank" rel="noopener">📷 Live-Blick auf den Mondsee
     <small>360°-Webcam · Ferienhof Gassner / Panomax</small></a>
   <div id="upd">Lade …</div>
@@ -40,6 +74,58 @@
   const upd = document.getElementById("upd");
   let configured = false, lastOk = 0;
 
+
+  const COND = {
+    "clear-night": ["🌙", "Klare Nacht"], "cloudy": ["☁️", "Bewölkt"], "exceptional": ["⚠️", "Unwetter"],
+    "fog": ["🌫️", "Nebel"], "hail": ["🌨️", "Hagel"], "lightning": ["🌩️", "Gewitter"],
+    "lightning-rainy": ["⛈️", "Gewitter mit Regen"], "partlycloudy": ["⛅", "Teils bewölkt"],
+    "pouring": ["🌧️", "Starkregen"], "rainy": ["🌦️", "Regen"], "snowy": ["❄️", "Schnee"],
+    "snowy-rainy": ["🌨️", "Schneeregen"], "sunny": ["☀️", "Sonnig"], "windy": ["💨", "Windig"],
+    "windy-variant": ["🌬️", "Windig & bewölkt"],
+  };
+  const cond = (c) => COND[c] || ["🌡️", c || ""];
+  const kwh = (v) => v == null ? "–" : v.toLocaleString("de-AT", { maximumFractionDigits: 1 }) + " kWh";
+  function renderExtra(d) {
+    if (d.pv) {
+      const p = d.pv; document.getElementById("pvbox").hidden = false;
+      document.getElementById("pvToday").textContent = kwh(p.today);
+      document.getElementById("pvRest").textContent = kwh(p.remaining);
+      document.getElementById("pvTom").textContent = kwh(p.tomorrow);
+      let m = "";
+      if (p.tomorrow != null) {
+        if (p.tomorrow >= 25) m = "🎉 Morgen wird ein richtiger Sonnentag!";
+        else if (p.tomorrow >= 12) m = "🙂 Morgen gibt's ordentlich Sonnenstrom.";
+        else if (p.tomorrow >= 5) m = "⛅ Morgen eher durchwachsen.";
+        else m = "🌧️ Morgen kommt wenig von der Sonne.";
+      }
+      document.getElementById("pvMsg").textContent = m;
+    }
+    const w = d.weather;
+    if (w) {
+      document.getElementById("wxbox").hidden = false;
+      const [ico, txt] = cond(w.cond);
+      document.getElementById("wxIco").textContent = ico;
+      document.getElementById("wxT").textContent = w.temp == null ? "–" : Math.round(w.temp) + " °C";
+      document.getElementById("wxC").textContent = txt;
+      const meta = [];
+      if (w.wind != null) meta.push("💨 " + Math.round(w.wind) + " km/h");
+      if (w.humidity != null) meta.push("💧 " + Math.round(w.humidity) + " %");
+      document.getElementById("wxM").textContent = meta.join(" · ");
+      const days = document.getElementById("wxDays"); days.innerHTML = "";
+      (w.daily || []).forEach((x, i) => {
+        const dt = new Date(x.date);
+        const name = i === 0 ? "Heute" : dt.toLocaleDateString("de-AT", { weekday: "short" });
+        const el = document.createElement("div"); el.className = "day";
+        el.innerHTML = '<div class="d"></div><div class="i"></div><div class="hi"></div><div class="lo"></div><div class="r"></div>';
+        el.children[0].textContent = name;
+        el.children[1].textContent = cond(x.cond)[0];
+        el.children[2].textContent = x.tmax == null ? "–" : Math.round(x.tmax) + "°";
+        el.children[3].textContent = x.tmin == null ? "" : Math.round(x.tmin) + "°";
+        el.children[4].textContent = x.rain ? x.rain.toLocaleString("de-AT") + " mm" : "";
+        days.appendChild(el);
+      });
+    }
+  }
   async function refresh() {
     try {
       const r = await fetch("/api/data", { cache: "no-store" });
@@ -47,6 +133,7 @@
       const d = await r.json();
       if (!configured) { card.setConfig(d.config); configured = true; }
       card.hass = { states: d.states };
+      renderExtra(d);
       lastOk = Date.now();
       const t = new Date(d.time * 1000);
       upd.className = "";
