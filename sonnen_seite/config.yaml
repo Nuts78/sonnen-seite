@@ -1,5 +1,5 @@
 name: Sonnen-Seite
-version: "1.4.0"
+version: "1.5.0"
 slug: sonnen_seite
 description: Eine einzige, öffentliche Seite mit der Sonnen-Laune – nur lesend, ohne Zugriff auf Home Assistant.
 url: https://github.com/Nuts78/sonnen-seite
@@ -25,6 +25,8 @@ options:
   threshold_entity: input_number.freigabe_last_p8
   pv_max: 8000
   pv_sunny: 300
+  impressum_name: "Stefan Nussbaumer"
+  impressum_ort: "5310 Tiefgraben, Österreich"
 schema:
   title: str
   pv_entity: str
@@ -38,3 +40,5 @@ schema:
   weather_entity: str?
   pv_today_entity: str?
   helios_strings: str?
+  impressum_name: str?
+  impressum_ort: str?

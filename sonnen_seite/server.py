@@ -4,6 +4,7 @@ Er fragt ein paar fest eingestellte Entitäten bei Home Assistant ab (über die
 Supervisor-API, der Token bleibt im Container) und gibt nach außen nur diese
 Werte weiter. Es gibt keine Schalter, keinen Login und keinen Weg zu HA.
 """
+import html
 import json
 import os
 import threading
@@ -63,6 +64,12 @@ def read_file(name):
 
 
 INDEX = read_file("index.html").replace(b"__TITLE__", OPTIONS.get("title", "Sonnenstrom").encode())
+IMPRESSUM = (
+    read_file("impressum.html")
+    .replace(b"__TITLE__", html.escape(OPTIONS.get("title", "Sonnenstrom")).encode())
+    .replace(b"__NAME__", html.escape(OPTIONS.get("impressum_name") or "Stefan Nussbaumer").encode())
+    .replace(b"__ORT__", html.escape(OPTIONS.get("impressum_ort") or "5310 Tiefgraben, Österreich").encode())
+)
 CARD_JS = read_file("card.js")
 ICON = read_file("icon.svg")
 MANIFEST = json.dumps({
@@ -238,6 +245,8 @@ class Handler(BaseHTTPRequestHandler):
             if self.command == "GET":
                 count_visit()
             self._send(200, INDEX, "text/html; charset=utf-8")
+        elif path in ("/impressum", "/impressum.html"):
+            self._send(200, IMPRESSUM, "text/html; charset=utf-8")
         elif path == "/api/data":
             self._send(200, get_data(), "application/json")
         elif path == "/card.js":
