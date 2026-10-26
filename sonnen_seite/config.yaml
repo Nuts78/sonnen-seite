@@ -1,0 +1,37 @@
+name: Sonnen-Seite
+version: "1.1.0"
+slug: sonnen_seite
+description: Eine einzige, öffentliche Seite mit der Sonnen-Laune – nur lesend, ohne Zugriff auf Home Assistant.
+url: https://github.com/Nuts78/sonnen-seite
+arch:
+  - aarch64
+  - amd64
+  - armv7
+init: false
+startup: application
+boot: auto
+homeassistant_api: true
+ports:
+  8099/tcp: 8099
+ports_description:
+  8099/tcp: Sonnen-Seite (öffentliche Webseite)
+options:
+  title: "Sonnenstrom"
+  pv_entity: sensor.deye_sunsynk_sol_ark_3_phase_x_2_pv_power
+  soc_entity: sensor.deye_sunsynk_sol_ark_3_phase_x_2_battery_state_of_charge
+  load_entity: sensor.leistung_gesamt_p8
+  grid_entity: sensor.alfred_energieag_alfred_energieag_leistung_bezug
+  relay_entity: input_boolean.lastrelais_virtuell
+  threshold_entity: input_number.freigabe_last_p8
+  pv_max: 8000
+  pv_sunny: 300
+schema:
+  title: str
+  pv_entity: str
+  soc_entity: str
+  load_entity: str
+  grid_entity: str
+  relay_entity: str
+  threshold_entity: str
+  pv_max: int
+  pv_sunny: int
