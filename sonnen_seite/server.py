@@ -33,10 +33,17 @@ ENTITIES = [OPTIONS[k] for k in ENTITY_KEYS if OPTIONS.get(k)]
 EXTRA_DEFAULTS = {
     "weather_entity": "weather.forecast_home",
     "pv_today_entity": "sensor.deye_sunsynk_sol_ark_3_phase_x_2_pv_energy",
-    "fc_remaining_entity": "sensor.energy_production_today_remaining",
-    "fc_tomorrow_entity": "sensor.energy_production_tomorrow",
+    # Helios-Prognose: Präfixe der Strings, kommagetrennt
+    "helios_strings": "string_1_west_oben,string_2_ost_oben,string_3_west_unten,string_4_ost_unten",
 }
 EXTRA = {k: (OPTIONS.get(k) or v) for k, v in EXTRA_DEFAULTS.items()}
+HELIOS = [x.strip() for x in EXTRA["helios_strings"].split(",") if x.strip()]
+
+
+def helios_sum(suffix):
+    vals = [_num(fetch_state(f"sensor.{p}_{suffix}")) for p in HELIOS]
+    vals = [v for v in vals if v is not None]
+    return round(sum(vals), 1) if vals else None
 EXTRA_SECONDS = 300
 
 # Nur das, was die Karte braucht – Entity-IDs werden durch neutrale Namen ersetzt.
@@ -166,8 +173,10 @@ def get_extra():
         print(f"Wetter nicht lesbar: {e}", flush=True)
     out["pv"] = {
         "today": _num(fetch_state(EXTRA["pv_today_entity"])),
-        "remaining": _num(fetch_state(EXTRA["fc_remaining_entity"])),
-        "tomorrow": _num(fetch_state(EXTRA["fc_tomorrow_entity"])),
+        "remaining": helios_sum("energy_today_remaining"),
+        "tomorrow": helios_sum("energy_day_1"),
+        "day2": helios_sum("energy_day_2"),
+        "source": "Helios",
     }
     _extra["data"], _extra["t"] = out, now
     return out

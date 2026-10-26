@@ -28,10 +28,11 @@
   .day .i { font-size: 1.6em; margin: 2px 0; }
   .day .hi { font-weight: 700; } .day .lo { color: #889; font-size: .9em; }
   .day .r { color: #2b6cb0; font-size: .75em; min-height: 1em; }
-  .pv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
+  .pv { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; text-align: center; }
   .pv div { background: #fff8e1; border-radius: 14px; padding: 10px 4px; }
   .pv span { display: block; font-size: .8em; color: #776; }
   .pv b { font-size: 1.2em; color: #b86e00; white-space: nowrap; }
+  .src { text-align: right; color: #aab; font-size: .75em; margin-top: 6px; }
   .pvmsg { text-align: center; margin-top: 10px; font-weight: 600; color: #b86e00; }
   @media (max-width: 380px) { .days { grid-template-columns: repeat(3, 1fr); } }
   .cam { display: block; margin: 14px auto 0; max-width: 560px; text-decoration: none; text-align: center;
@@ -50,8 +51,10 @@
       <div><span>Heute erzeugt</span><b id="pvToday">–</b></div>
       <div><span>Kommt heute noch</span><b id="pvRest">–</b></div>
       <div><span>Morgen erwartet</span><b id="pvTom">–</b></div>
+      <div><span>Übermorgen</span><b id="pvD2">–</b></div>
     </div>
     <div class="pvmsg" id="pvMsg"></div>
+    <div class="src" id="pvSrc"></div>
   </div>
   <div class="box" id="wxbox" hidden>
     <h3>🌤️ Wetter in Punzau</h3>
@@ -91,6 +94,7 @@
       document.getElementById("pvToday").textContent = kwh(p.today);
       document.getElementById("pvRest").textContent = kwh(p.remaining);
       document.getElementById("pvTom").textContent = kwh(p.tomorrow);
+      document.getElementById("pvD2").textContent = kwh(p.day2);
       let m = "";
       if (p.tomorrow != null) {
         if (p.tomorrow >= 25) m = "🎉 Morgen wird ein richtiger Sonnentag!";
@@ -99,6 +103,7 @@
         else m = "🌧️ Morgen kommt wenig von der Sonne.";
       }
       document.getElementById("pvMsg").textContent = m;
+      document.getElementById("pvSrc").textContent = p.source ? "Prognose: " + p.source : "";
     }
     const w = d.weather;
     if (w) {
