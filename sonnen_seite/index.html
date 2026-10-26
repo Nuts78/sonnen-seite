@@ -15,12 +15,18 @@
   sonnen-laune-card { display: block; border-radius: 22px; overflow: hidden; box-shadow: 0 4px 18px rgba(0,0,0,.08); }
   #upd { text-align: center; color: #667; font-size: .95em; margin-top: 10px; }
   #upd.old { color: #a33; }
+  .cam { display: block; margin: 14px auto 0; max-width: 560px; text-decoration: none; text-align: center;
+         background: linear-gradient(90deg,#2b6cb0,#38a1db); color: #fff; font-weight: 600; font-size: 1.1em;
+         padding: 12px 16px; border-radius: 16px; box-shadow: 0 4px 14px rgba(43,108,176,.25); }
+  .cam small { display: block; font-weight: 400; opacity: .85; font-size: .8em; margin-top: 2px; }
   #visits { text-align: center; color: #889; font-size: .85em; margin-top: 4px; }
 </style>
 </head>
 <body>
 <main>
   <sonnen-laune-card id="card"></sonnen-laune-card>
+  <a class="cam" href="https://mondseeblick.panomax.com/" target="_blank" rel="noopener">📷 Live-Blick auf den Mondsee
+    <small>360°-Webcam · Ferienhof Gassner / Panomax</small></a>
   <div id="upd">Lade …</div>
   <div id="visits"></div>
 </main>
