@@ -1,5 +1,5 @@
 name: Sonnen-Seite
-version: "1.5.0"
+version: "1.6.0"
 slug: sonnen_seite
 description: Eine einzige, öffentliche Seite mit der Sonnen-Laune – nur lesend, ohne Zugriff auf Home Assistant.
 url: https://github.com/Nuts78/sonnen-seite
@@ -40,5 +40,6 @@ schema:
   weather_entity: str?
   pv_today_entity: str?
   helios_strings: str?
+  sun_entity: str?
   impressum_name: str?
   impressum_ort: str?

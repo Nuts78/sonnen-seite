@@ -57,6 +57,10 @@ for k in ENTITY_KEYS:
     if OPTIONS.get(k):
         CARD_CONFIG[k] = k  # neutraler Platzhalter statt echter Entity-ID
 
+# Sonnenstand für die schlafende Sonne in der Nacht
+SUN_ENTITY = OPTIONS.get("sun_entity") or "sun.sun"
+CARD_CONFIG["sun_entity"] = "sun"
+
 
 def read_file(name):
     with open(os.path.join(APP_DIR, name), "rb") as f:
@@ -202,6 +206,17 @@ def fetch_state(entity_id):
         return "unavailable"
 
 
+def fetch_sun():
+    """Nur Zustand (über/unter dem Horizont) und nächster Sonnenaufgang."""
+    try:
+        s = _ha(f"/states/{SUN_ENTITY}")
+        return {"state": s.get("state", "unknown"),
+                "attributes": {"next_rising": (s.get("attributes") or {}).get("next_rising")}}
+    except Exception as e:  # noqa: BLE001
+        print(f"Sonnenstand nicht lesbar: {e}", flush=True)
+        return {"state": "unknown", "attributes": {}}
+
+
 def get_data():
     with _lock:
         now = time.time()
@@ -211,6 +226,7 @@ def get_data():
                 eid = OPTIONS.get(k)
                 if eid:
                     states[k] = {"state": fetch_state(eid)}
+            states["sun"] = fetch_sun()
             _cache["data"] = {"config": CARD_CONFIG, "states": states, "time": int(now), **get_extra()}
             _cache["t"] = now
         return json.dumps({**_cache["data"], "visits": visits()}).encode()
